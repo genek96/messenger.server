@@ -1,15 +1,22 @@
+import org.apache.log4j.Logger;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
+
 
 public class Connector implements Runnable{
-    ServerSocket servSocket;
-    ClientContainer clients;
 
-    public Connector(int port, ClientContainer container){
+    private static final Logger log = Logger.getLogger(Connector.class);
+    private ServerSocket servSocket;
+    private ClientContainer clients;
+
+    Connector(int port, ClientContainer container){
         try {
             servSocket = new ServerSocket(port);
         } catch (IOException ex){
+            log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
             System.err.println(ex.getMessage());
         }
         clients = container;
@@ -22,7 +29,7 @@ public class Connector implements Runnable{
                 Socket socket = servSocket.accept();
                 clients.addNewClient(socket);
             } catch (IOException ex){
-                System.err.println(ex.getMessage());
+                log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
             }
         }
     }
