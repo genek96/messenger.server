@@ -13,15 +13,20 @@ class ClientContainer implements MessageReciver{
     private ArrayList<Socket> clients = new ArrayList<>();
     private ArrayList<Thread> inputs = new ArrayList<>();
     private ArrayList<Sender> outputs = new ArrayList<>();
+    private ArrayList<String> names = new ArrayList<>();
 
-    void addNewClient(@NotNull Socket client){
+    void addNewClient(@NotNull Socket client, String name){
         try {
+            Receiver receiver = new Receiver(client.getInputStream(), this, clients.size());
+            Thread receiverThread = new Thread(receiver);
+
             clients.add(client);
             outputs.add(new Sender(client.getOutputStream()));
-            Receiver receiver = new Receiver(client.getInputStream(), this, clients.size()-1);
-            Thread receiverThread = new Thread(receiver);
             inputs.add(receiverThread);
+            names.add(name);
+
             receiverThread.start();
+            sendMessages(name + " have joined to chat!", clients.size()-1);
         } catch (IOException ex){
             log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
             System.err.println(ex.getMessage());
@@ -29,12 +34,13 @@ class ClientContainer implements MessageReciver{
     }
 
     @Override
-    public void getMessage(String message, int clientId) {
+    public void sendMessages(String message, int clientId) {
+        String sender = names.get(clientId); //name of message sender
         for (int i = 0; i < outputs.size(); i++) {
             if (i == clientId || !outputs.get(i).isActive()){
                 continue;
             }
-            outputs.get(i).sendMessage(message);
+            outputs.get(i).sendMessage(sender + ": " + message);
         }
     }
 
@@ -70,10 +76,11 @@ class Receiver implements Runnable{
         while (!Thread.currentThread().isInterrupted()){
             try {
                 String message = input.readUTF();
-                router.getMessage(message, id);
+                router.sendMessages(message, id);
             } catch (IOException ex){
                 log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
                 System.err.println(ex.getMessage());
+                router.sendMessages("have leaved the chat", id);
                 return;
             }
         }

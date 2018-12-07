@@ -1,5 +1,6 @@
 import org.apache.log4j.Logger;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -27,7 +28,13 @@ public class Connector implements Runnable{
         while (!Thread.currentThread().isInterrupted()){
             try{
                 Socket socket = servSocket.accept();
-                clients.addNewClient(socket);
+                //authorization
+                socket.setSoTimeout(0);
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                String name = input.readUTF();
+//                input.close();
+
+                clients.addNewClient(socket, name);
             } catch (IOException ex){
                 log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
             }
