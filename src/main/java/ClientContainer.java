@@ -35,6 +35,10 @@ class ClientContainer implements MessageReciver{
 
     @Override
     public void sendMessages(String message, int clientId) {
+        if (clientId < 0 || clientId >= names.size()){
+            log.error("Index out of boundaries exception : "+ Arrays.toString((new Exception()).getStackTrace()));
+            return;
+        }
         String sender = names.get(clientId); //name of message sender
         for (int i = 0; i < outputs.size(); i++) {
             if (i == clientId || !outputs.get(i).isActive()){
@@ -44,16 +48,6 @@ class ClientContainer implements MessageReciver{
         }
     }
 
-    public void stopAll(){
-        for (int i = 0; i < clients.size(); i ++){
-            inputs.get(i).interrupt();
-            try {
-                clients.get(i).close();
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
-        }
-    }
 }
 
 class Receiver implements Runnable{
