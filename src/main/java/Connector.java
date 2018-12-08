@@ -16,7 +16,7 @@ public class Connector implements Runnable{
     Connector(int port, ClientContainer container){
         try {
             servSocket = new ServerSocket(port);
-        } catch (IOException ex){
+        } catch (IOException | IllegalArgumentException ex){
             log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
             System.err.println(ex.getMessage());
         }
@@ -32,8 +32,6 @@ public class Connector implements Runnable{
                 socket.setSoTimeout(0);
                 DataInputStream input = new DataInputStream(socket.getInputStream());
                 String name = input.readUTF();
-//                input.close();
-
                 clients.addNewClient(socket, name);
             } catch (IOException ex){
                 log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));

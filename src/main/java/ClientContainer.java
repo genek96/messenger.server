@@ -96,7 +96,7 @@ class Sender  {
     void sendMessage (String message){
         try {
             output.writeUTF(message);
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             log.error(e.getMessage()+" : "+ Arrays.toString(e.getStackTrace()));
             System.err.println(e.getMessage());
             active = false;
