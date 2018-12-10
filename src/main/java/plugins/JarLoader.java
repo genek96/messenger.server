@@ -13,6 +13,9 @@ public class JarLoader {
 
     public Class loadClass(String className, String classPackage) throws ClassNotFoundException {
         URL url = getUrlToResource(className);
+        if (url == null){
+            throw new ClassNotFoundException("Class "+className+" not found");
+        }
         URL[] urls = new URL[] {url};
         ClassLoader loader = new URLClassLoader(urls);
         classPackage = (classPackage == null) ? "" : classPackage;
