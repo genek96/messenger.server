@@ -14,17 +14,24 @@ class ClientContainer implements MessageReciver{
     private ArrayList<Thread> inputs = new ArrayList<>();
     private ArrayList<Sender> outputs = new ArrayList<>();
     private ArrayList<String> names = new ArrayList<>();
+    private ArrayList<Thread> performersThreads = new ArrayList<>();
+    private ArrayList<FunctionsPerformer> performers = new ArrayList<>();
 
-    void addNewClient(@NotNull Socket client, String name){
+    void addNewClient(@NotNull Socket client, String name){ //TODO add synchronization
         try {
             Receiver receiver = new Receiver(client.getInputStream(), this, clients.size());
+            FunctionsPerformer performer = new FunctionsPerformer("", this, clients.size());
             Thread receiverThread = new Thread(receiver);
+            Thread performerThread = new Thread(performer);
 
+            performersThreads.add(performerThread);
+            performers.add(performer);
             clients.add(client);
             outputs.add(new Sender(client.getOutputStream()));
             inputs.add(receiverThread);
             names.add(name);
 
+            performerThread.start();
             receiverThread.start();
             sendMessages(name + " have joined to chat!", clients.size()-1);
         } catch (IOException ex){
@@ -45,6 +52,20 @@ class ClientContainer implements MessageReciver{
                 continue;
             }
             outputs.get(i).sendMessage(sender + ": " + message);
+        }
+    }
+
+    @Override
+    public void doCommand(String text, int clientId){
+        performers.get(clientId).addTask(text);
+    }
+
+    @Override
+    public void getAnswer(String result, int clientId) {
+        if (result == null){
+            outputs.get(clientId).sendMessage("Response to your task: command not found");
+        } else {
+            outputs.get(clientId).sendMessage("Response to your task: " + result);
         }
     }
 
@@ -70,7 +91,13 @@ class Receiver implements Runnable{
         while (!Thread.currentThread().isInterrupted()){
             try {
                 String message = input.readUTF();
-                router.sendMessages(message, id);
+                //checking: is it simple message or command?
+                if (message.startsWith("/")){
+                    router.doCommand(message, id);
+                } else {
+                    router.sendMessages(message, id);
+                }
+
             } catch (IOException ex){
                 log.error(ex.getMessage()+" : "+ Arrays.toString(ex.getStackTrace()));
                 System.err.println(ex.getMessage());
