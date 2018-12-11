@@ -17,6 +17,14 @@ class ClientContainer implements MessageReciver{
     private ArrayList<Thread> performersThreads = new ArrayList<>();
     private ArrayList<FunctionsPerformer> performers = new ArrayList<>();
 
+    /**
+     * This method add new client to container
+     * and open input and output streams for it.
+     * @param client
+     *        socket of a new client
+     * @param name
+     *        this name will shown to all other members of the chat
+     */
     void addNewClient(@NotNull Socket client, String name){ //TODO add synchronization
         try {
             Receiver receiver = new Receiver(client.getInputStream(), this, clients.size());
@@ -40,6 +48,14 @@ class ClientContainer implements MessageReciver{
         }
     }
 
+    /**
+     * You have to call it when somebody send a message.
+     * This method send this message for everybody, who joined the chat
+     * @param message
+     *        Text of the message
+     * @param clientId
+     *        id of client, who sent this message
+     */
     @Override
     public void sendMessages(String message, int clientId) {
         if (clientId < 0 || clientId >= names.size()){
@@ -55,11 +71,27 @@ class ClientContainer implements MessageReciver{
         }
     }
 
+    /**
+     * You have call it when somebody sent a command, which starts from '/'
+     * This method starts performing of this command
+     * @param text
+     *        full text of command, including '/' and parameters, separated by ' '
+     * @param clientId
+     *         if od client, who sent the command
+     */
     @Override
     public void doCommand(String text, int clientId){
         performers.get(clientId).addTask(text);
     }
 
+    /**
+     * This method must called only by FunctionsPerformer.
+     * It send response on the command, which client sent early
+     * @param result
+     *        result of performing the command
+     * @param clientId
+     *        client, who sent the command. He will receive the answer.
+     */
     @Override
     public void getAnswer(String result, int clientId) {
         if (result == null){
@@ -79,13 +111,28 @@ class Receiver implements Runnable{
     private MessageReciver router;
     private int id;
 
-    Receiver(InputStream stream, MessageReciver router, int identificator){
+    /**
+     *
+     * @param stream
+     *        Input stream for receiving messages
+     * @param router
+     *        Link to the ClientContainer, who will use this object.
+     *        If you create this object from some ClientContainer, you must use "this"
+     * @param identifier
+     *          unique identifier of the client.
+     *          If it called from ClientContainer it should be index of client in an array.
+     */
+    Receiver(InputStream stream, MessageReciver router, int identifier){
         input = new DataInputStream(stream);
         this.router = router;
-        id = identificator;
+        id = identifier;
     }
 
-
+    /**
+     * It is waiting for a new message and when it receive one,
+     * it called methods doCommand() or sendMessage() of the router,
+     * which must be defined in the constructor
+     */
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()){
@@ -116,10 +163,20 @@ class Sender  {
     private DataOutputStream output;
     private boolean active = true;
 
+    /**
+     *
+     * @param stream
+     *        to this Output Stream Sender will send messages
+     */
     Sender (OutputStream stream){
         output = new DataOutputStream(stream);
     }
 
+    /**
+     *
+     * @param message
+     *        Send message to client
+     */
     void sendMessage (String message){
         try {
             output.writeUTF(message);
@@ -130,6 +187,12 @@ class Sender  {
         }
     }
 
+    /**
+     *
+     * @return
+     *          {true} - if Sender is available to sending
+     *          {false} - if it is not
+     */
     boolean isActive(){
         return active;
     }

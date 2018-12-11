@@ -13,6 +13,13 @@ public class Connector implements Runnable{
     private ServerSocket servSocket;
     private ClientContainer clients;
 
+    /**
+     * Open server socket
+     * @param port
+     *        port of the server socket
+     * @param container
+     *        Client container, which will store clients and work with them
+     */
     Connector(int port, ClientContainer container){
         try {
             servSocket = new ServerSocket(port);
@@ -23,6 +30,9 @@ public class Connector implements Runnable{
         clients = container;
     }
 
+    /**
+     * This method is waiting of new connections and added them to client container
+     */
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()){

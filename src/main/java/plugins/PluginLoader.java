@@ -8,24 +8,44 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 
 public class PluginLoader  extends ClassLoader implements JarClassLoader {
 
     private static final Logger log = Logger.getLogger(PluginLoader.class);
 
     private Map classesHash = new HashMap();
-    public final String[] classPath;
+    private final String[] classPath;
 
+    /**
+     *
+     * @param classPath define folders with plugins started from "resources"
+     */
     public PluginLoader(String[] classPath){
         this.classPath = classPath;
     }
 
-    public synchronized Class loadClass (String name, String packageName) throws ClassNotFoundException {
-        return loadClass(packageName+name, true);
+    /**
+     *
+     * @param className - name of required class
+     * @param classPackage - package with the class
+     * @return required class with entered name
+     * @throws ClassNotFoundException - if class with required name is not found
+     * @see JarClassLoader
+     */
+    public synchronized Class loadClass (String className, String classPackage) throws ClassNotFoundException {
+        return loadClass(classPackage+"."+className, true);
     }
 
+    /**
+     *
+     * @param name
+     *        the name of required class
+     * @param resolve
+     *        If {@code true} then resolve the class
+     * @return class if it was found
+     * @throws ClassNotFoundException
+     *          Throws, when the class was not found
+     */
     @Override
     protected synchronized Class loadClass (String name, boolean resolve) throws ClassNotFoundException {
         Class result = findClass(name);
@@ -35,6 +55,14 @@ public class PluginLoader  extends ClassLoader implements JarClassLoader {
         return result;
     }
 
+    /**
+     *
+     * @param name
+     *        the name of required class
+     * @return class, if it was found
+     * @throws ClassNotFoundException
+     *         Throws, when class was not found
+     */
     @Override
     protected Class findClass(String name) throws ClassNotFoundException {
         Class result = (Class) classesHash.get(name);
@@ -60,6 +88,12 @@ public class PluginLoader  extends ClassLoader implements JarClassLoader {
 
     }
 
+    /**
+     *
+     * @param name
+     *        Name of the required file
+     * @return URL if the resource was found, else null
+     */
     protected URL findResource(String name){
         File file = findFile(name, "");
         if (file == null){
@@ -72,6 +106,14 @@ public class PluginLoader  extends ClassLoader implements JarClassLoader {
         }
     }
 
+    /**
+     *
+     * @param file
+     *        File, from which we will read bytes
+     * @return File's content as byte array
+     * @throws IOException
+     *          if exception occur during reading the file
+     */
     private byte[] loadFileAsBytes(File file) throws IOException {
         byte[] result = new byte[(int)file.length()];
         FileInputStream fileStream = new FileInputStream(file);
@@ -87,6 +129,14 @@ public class PluginLoader  extends ClassLoader implements JarClassLoader {
         return result;
     }
 
+    /**
+     *
+     * @param name
+     *        the name of required file
+     * @param extension
+     *        extension of required file
+     * @return File if it was found, else null
+     */
     private File findFile(String name, String extension) {
         for (int i = 0; i < classPath.length; i++){
             File file = new File((new File(classPath[i])).getPath()+

@@ -7,10 +7,22 @@ import java.nio.file.Paths;
 public class JarLoader implements JarClassLoader{
     private final String classPath;
 
+    /**
+     *
+     * @param classPath define folder with plugins started from "resources"
+     */
     public JarLoader(String classPath) {
         this.classPath = classPath;
     }
 
+    /**
+     *
+     * @param className - name of required class
+     * @param classPackage - package with the class
+     * @return required class with entered name
+     * @throws ClassNotFoundException - if class with required name is not found
+     * @see JarLoader
+     */
     public synchronized Class loadClass(String className, String classPackage) throws ClassNotFoundException {
         URL url = getUrlToResource(className);
         if (url == null){
@@ -22,11 +34,17 @@ public class JarLoader implements JarClassLoader{
         return loader.loadClass(classPackage+className);
     }
 
-    private File findFile(String fileName) throws Throwable {
+    /**
+     *
+     * @param fileName name of required file
+     * @return File, if it was found or null if it is not
+     */
+    private File findFile(String fileName)  {
         ClassLoader loader = getClass().getClassLoader();
         URL url = loader.getResource("Factorial.jar");
-
-//        File file = new File(classPath + fileName+".jar");
+        if (url == null){
+            return null;
+        }
         File file = new File(url.getPath());
         System.out.println(file.getAbsolutePath());
         if (file.exists()){
@@ -36,6 +54,11 @@ public class JarLoader implements JarClassLoader{
         }
     }
 
+    /**
+     *
+     * @param fileName name of the required file
+     * @return url, if resource was found, else null
+     */
     private URL getUrlToResource(String fileName) {
         ClassLoader loader = getClass().getClassLoader();
         URL url = loader.getResource(classPath+fileName+".jar");
