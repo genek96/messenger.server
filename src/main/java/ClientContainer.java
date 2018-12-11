@@ -17,6 +17,7 @@ class ClientContainer implements MessageReciver{
     private ArrayList<Thread> performersThreads = new ArrayList<>();
     private ArrayList<FunctionsPerformer> performers = new ArrayList<>();
 
+    private Object locker = new Object(); //locker for collections
     /**
      * This method add new client to container
      * and open input and output streams for it.
@@ -25,19 +26,21 @@ class ClientContainer implements MessageReciver{
      * @param name
      *        this name will shown to all other members of the chat
      */
-    void addNewClient(@NotNull Socket client, String name){ //TODO add synchronization
+    void addNewClient(@NotNull Socket client, String name){
         try {
             Receiver receiver = new Receiver(client.getInputStream(), this, clients.size());
             FunctionsPerformer performer = new FunctionsPerformer("", this, clients.size());
             Thread receiverThread = new Thread(receiver);
             Thread performerThread = new Thread(performer);
 
-            performersThreads.add(performerThread);
-            performers.add(performer);
-            clients.add(client);
-            outputs.add(new Sender(client.getOutputStream()));
-            inputs.add(receiverThread);
-            names.add(name);
+            synchronized (locker){
+                performersThreads.add(performerThread);
+                performers.add(performer);
+                clients.add(client);
+                outputs.add(new Sender(client.getOutputStream()));
+                inputs.add(receiverThread);
+                names.add(name);
+            }
 
             performerThread.start();
             receiverThread.start();
@@ -58,16 +61,18 @@ class ClientContainer implements MessageReciver{
      */
     @Override
     public void sendMessages(String message, int clientId) {
-        if (clientId < 0 || clientId >= names.size()){
-            log.error("Index out of boundaries exception : "+ Arrays.toString((new Exception()).getStackTrace()));
-            return;
-        }
-        String sender = names.get(clientId); //name of message sender
-        for (int i = 0; i < outputs.size(); i++) {
-            if (i == clientId || !outputs.get(i).isActive()){
-                continue;
+        synchronized (locker){
+            if (clientId < 0 || clientId >= names.size()){
+                log.error("Index out of boundaries exception : "+ Arrays.toString((new Exception()).getStackTrace()));
+                return;
             }
-            outputs.get(i).sendMessage(sender + ": " + message);
+            String sender = names.get(clientId); //name of message sender
+            for (int i = 0; i < outputs.size(); i++) {
+                if (i == clientId || !outputs.get(i).isActive()){
+                    continue;
+                }
+                outputs.get(i).sendMessage(sender + ": " + message);
+            }
         }
     }
 
@@ -81,7 +86,9 @@ class ClientContainer implements MessageReciver{
      */
     @Override
     public void doCommand(String text, int clientId){
-        performers.get(clientId).addTask(text);
+        synchronized (locker){
+            performers.get(clientId).addTask(text);
+        }
     }
 
     /**
@@ -94,10 +101,12 @@ class ClientContainer implements MessageReciver{
      */
     @Override
     public void getAnswer(String result, int clientId) {
-        if (result == null){
-            outputs.get(clientId).sendMessage("Response to your task: command not found");
-        } else {
-            outputs.get(clientId).sendMessage("Response to your task: " + result);
+        synchronized (locker){
+            if (result == null){
+                outputs.get(clientId).sendMessage("Response to your task: command not found");
+            } else {
+                outputs.get(clientId).sendMessage("Response to your task: " + result);
+            }
         }
     }
 
