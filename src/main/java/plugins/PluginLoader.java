@@ -2,10 +2,7 @@ package plugins;
 
 import org.apache.log4j.Logger;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -14,7 +11,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-public class PluginLoader extends ClassLoader {
+public class PluginLoader  extends ClassLoader implements JarClassLoader {
 
     private static final Logger log = Logger.getLogger(PluginLoader.class);
 
@@ -23,6 +20,10 @@ public class PluginLoader extends ClassLoader {
 
     public PluginLoader(String[] classPath){
         this.classPath = classPath;
+    }
+
+    public synchronized Class loadClass (String name, String packageName) throws ClassNotFoundException {
+        return loadClass(packageName+name, true);
     }
 
     @Override
@@ -40,6 +41,7 @@ public class PluginLoader extends ClassLoader {
         if (result != null){
             return result;
         }
+
         File file = findFile(name.replace('.','/'), ".class");
         if (file == null){
             return findSystemClass(name);

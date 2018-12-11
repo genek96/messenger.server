@@ -4,14 +4,14 @@ import java.io.File;
 import java.net.*;
 import java.nio.file.Paths;
 
-public class JarLoader {
+public class JarLoader implements JarClassLoader{
     private final String classPath;
 
     public JarLoader(String classPath) {
         this.classPath = classPath;
     }
 
-    public Class loadClass(String className, String classPackage) throws ClassNotFoundException {
+    public synchronized Class loadClass(String className, String classPackage) throws ClassNotFoundException {
         URL url = getUrlToResource(className);
         if (url == null){
             throw new ClassNotFoundException("Class "+className+" not found");

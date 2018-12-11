@@ -1,24 +1,28 @@
 import org.apache.log4j.Logger;
+import plugins.JarClassLoader;
 import plugins.JarLoader;
+import plugins.PluginLoader;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class FunctionsPerformer implements Runnable{
-    private JarLoader loader;
+    private JarClassLoader loader;
 
     private static final Logger log = Logger.getLogger(FunctionsPerformer.class);
     private ArrayList<String> tasks = new ArrayList<>();
     private final MessageReciver router; //required to notify about completed task
     private final int id;
 
+    public static final Object locker = new Object(); //locker for synchronization
     /**
      *
      * @param classPath - way from resources folder to folder with jar plugins.
      */
     public FunctionsPerformer (String classPath, MessageReciver router, int id){
-        this.loader = new JarLoader(classPath);
+//        this.loader = new JarLoader(classPath);
+        this.loader = new PluginLoader(new String[] {""});
         this.router = router;
         this.id = id;
     }
@@ -27,9 +31,11 @@ public class FunctionsPerformer implements Runnable{
      *
      * @param task task, which should be added to order of tasks
      */
-    public void addTask(String task){
+    void addTask(String task){
         if (task.startsWith("/")){
-            tasks.add(task);
+            synchronized (locker){
+                tasks.add(task);
+            }
         }
     }
 
@@ -117,14 +123,20 @@ public class FunctionsPerformer implements Runnable{
                 continue;
             }
             while (tasks.size() > 0){
-                String[] parts = tasks.get(0).split(" ");
-                String[] params = new String[0];
-                if (parts.length > 1){
-                    params = (tasks.get(0).substring(parts[0].length()+1)).split(" ");
+                String[] parts;
+                String[] params;
+                synchronized (locker) {
+                    parts = tasks.get(0).split(" ");
+                    params = new String[0];
+                    if (parts.length > 1) {
+                        params = (tasks.get(0).substring(parts[0].length() + 1)).split(" ");
+                    }
                 }
                 String result = doCommand(parts[0], params);
                 router.getAnswer(result, id);
-                tasks.remove(0);
+                synchronized (locker){
+                    tasks.remove(0);
+                }
             }
         }
     }
