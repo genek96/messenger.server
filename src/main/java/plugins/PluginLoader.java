@@ -33,7 +33,11 @@ public class PluginLoader  extends ClassLoader implements JarClassLoader {
      * @see JarClassLoader
      */
     public synchronized Class loadClass (String className, String classPackage) throws ClassNotFoundException {
-        return loadClass(classPackage+"."+className, true);
+        if (classPackage == null){
+            return loadClass(className, true);
+        } else{
+            return loadClass(classPackage+"."+className, true);
+        }
     }
 
     /**
